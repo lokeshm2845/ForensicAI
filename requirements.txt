@@ -1,0 +1,14 @@
+# API server runtime. For CPU-only hosts install torch from the CPU index first (see Dockerfile):
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
+numpy
+soundfile
+fastapi
+uvicorn
+python-multipart
+httpx
+# tests / dev
+pytest
+playwright
