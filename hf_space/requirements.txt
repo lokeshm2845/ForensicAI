@@ -1,0 +1,10 @@
+﻿--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
+numpy
+soundfile
+fastapi
+uvicorn
+python-multipart
+httpx

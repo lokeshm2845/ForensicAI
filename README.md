@@ -52,18 +52,29 @@ Vercel cannot run the model (PyTorch + weights exceed its function size limit; n
 1. Create a project at supabase.com. SQL Editor -> paste and run `supabase/schema.sql`.
 2. Settings -> API: copy the **Project URL**, the **anon** key (public) and the **service_role** key (**secret**).
 
-### 2b. API on Hugging Face Spaces (free CPU, Docker)
-1. New Space -> SDK **Docker** -> blank. Push this repo's `Dockerfile`, `server/`, `model/`, `samples/` to the Space repo, and add this header to the Space's `README.md`:
-   ```
-   ---
-   title: Forensic AI API
-   sdk: docker
-   app_port: 7860
-   ---
-   ```
-2. Space -> Settings -> Variables and secrets: `CORS_ORIGINS=https://YOUR-APP.vercel.app`, `STORE_FILENAMES=0`, `SUPABASE_URL=...`, and **secret** `SUPABASE_SERVICE_KEY=...`.
-3. Check `https://YOUR-SPACE.hf.space/api/health` -> `"database": {"backend": "sqlite+supabase"}`.
-(Render/Railway/Fly.io work too with the same Dockerfile; give the container >= 1 GB RAM.)
+### 2b. Where the API runs (pick one)
+
+The API needs ~800 MB RAM, so 512 MB free tiers (Render/Koyeb free) are too small.
+
+**Option 1 - your own PC + a free tunnel (no card, no account needed for the tunnel).** Best when Hugging Face does not offer you free CPU hosting.
+```bash
+# terminal 1 - the API (put your own values; the service key is a secret)
+cd Forensic_AI_Web
+set CORS_ORIGINS=*
+set STORE_FILENAMES=0
+set SUPABASE_URL=https://YOURPROJECT.supabase.co
+set SUPABASE_SERVICE_KEY=...
+py -m uvicorn server.main:app --host 127.0.0.1 --port 8000
+
+# terminal 2 - public https address for it (install once:  winget install Cloudflare.cloudflared)
+cloudflared tunnel --url http://127.0.0.1:8000        # prints https://<random-words>.trycloudflare.com
+```
+That address changes every time you start the tunnel. Either paste it into the site under **About -> Connection** (saved in that browser), or set it as `API_BASE_URL` in Vercel and redeploy. The PC and both terminals must stay on while people use the site.
+For a faculty demo you can skip the cloud entirely: open http://127.0.0.1:8000 (UI + API together).
+
+**Option 2 - Hugging Face Space, if your account offers free *CPU basic*.** Create a Space with SDK **Gradio** and hardware **CPU basic**, then upload everything inside `hf_space/`
+(`app.py`, `README.md`, `requirements.txt`, `server/`, `model/`, `samples/`). Add variables `DEVICE=cpu`, `STORE_FILENAMES=0`, `SUPABASE_URL`, `CORS_ORIGINS` and the secret `SUPABASE_SERVICE_KEY`.
+(ZeroGPU hardware does not work for this app.) A Docker Space with the included `Dockerfile` works on any host that runs containers with >= 1 GB RAM.
 
 ### 2c. UI on Vercel
 1. Push this repo to GitHub, then Vercel -> *Add New Project* -> import it. Framework: *Other*. `vercel.json` already sets the build command and output folder.

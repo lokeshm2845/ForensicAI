@@ -212,6 +212,12 @@
       <g class="a-line"><path d="M120 105 C145 105 145 45 170 45"/><path d="M120 125 C145 125 145 185 170 185"/><path d="M320 45h40"/><path d="M320 185h40"/><path d="M530 45 C560 45 560 105 580 105"/><path d="M530 185 C560 185 560 125 580 125"/><path d="M700 115h50"/></g>
     </svg>
   </article>
+  <article class="card conn-card">
+    <div class="card-head"><h3>Connection</h3><span class="muted small">where this page sends audio for analysis</span></div>
+    <div class="conn-row"><input id="apiInput" type="url" placeholder="same server (leave empty) or https://your-tunnel.trycloudflare.com" spellcheck="false" autocomplete="off">
+      <button class="btn small" id="apiTest" type="button">Test</button><button class="btn small primary" id="apiSave" type="button">Save</button><button class="btn small ghost" id="apiReset" type="button">Reset</button></div>
+    <p class="muted small" id="apiMsg">Saved in this browser only. Use this when the API runs on your own PC behind a tunnel.</p>
+  </article>
   <div class="about-grid">
     <article class="card"><div class="card-head"><h3>Measured performance</h3></div><div id="aboutResults"></div></article>
     <article class="card"><div class="card-head"><h3>Robustness (EER, mean of 2 seeds)</h3></div><div id="aboutRobust"></div></article>

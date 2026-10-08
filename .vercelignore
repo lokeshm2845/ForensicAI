@@ -6,3 +6,4 @@ supabase
 Dockerfile
 requirements.txt
 data
+hf_space

@@ -5,6 +5,11 @@
 
 /* ============================================================ 1. helpers */
 const CFG = Object.assign({ apiBase: "", supabaseUrl: "", supabaseAnonKey: "" }, window.FORENSIC_CONFIG || {});
+try { const saved = localStorage.getItem("fai_api"); if (saved) CFG.apiBase = saved; } catch {}   // address typed in About -> Connection overrides config.js
+if (/ngrok/i.test(CFG.apiBase || "")) {   // ngrok's free plan shows a browser warning page unless this header is sent
+  const _fetch = window.fetch.bind(window);
+  window.fetch = (u, o = {}) => _fetch(u, { ...o, headers: { ...(o.headers || {}), "ngrok-skip-browser-warning": "1" } });
+}
 const API = (p) => (CFG.apiBase || "").replace(/\/$/, "") + p;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -553,6 +558,22 @@ async function loadInfo() {
       `</tbody></table><p class="muted small">Noise = white noise at that SNR; 8 kHz = telephone-band resampling. Without augmentation the baseline collapses.</p>`;
   } catch { /* API offline */ }
 }
+
+/* ---- About -> Connection: point this page at any API address (e.g. a tunnel to your own PC) without redeploying */
+(function connection() {
+  const inp = $("#apiInput"), msg = $("#apiMsg"); inp.value = CFG.apiBase || "";
+  const clean = () => inp.value.trim().replace(/\/+$/, "");
+  $("#apiSave").addEventListener("click", () => {
+    const v = clean(); if (!/^https?:\/\/[^\s]+$/i.test(v)) { msg.textContent = "Enter a full address starting with https:// (or http://)."; return; }
+    try { localStorage.setItem("fai_api", v); } catch {} location.reload();
+  });
+  $("#apiReset").addEventListener("click", () => { try { localStorage.removeItem("fai_api"); } catch {} location.reload(); });
+  $("#apiTest").addEventListener("click", async () => {
+    const v = clean() || ""; msg.textContent = "Testing…";
+    try { const r = await fetch(v + "/api/health"); const h = await r.json(); msg.textContent = `OK – API v${h.version} on ${h.device}, database: ${h.database.backend}`; }
+    catch { msg.textContent = "Cannot reach that address (is the server and tunnel running? is CORS_ORIGINS set?)."; }
+  });
+})();
 
 /* ============================================================ boot */
 (async function boot() {

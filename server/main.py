@@ -1,4 +1,4 @@
-"""Forensic AI web API (FastAPI).  Run:  py -m uvicorn server.main:app --port 8000   (from the project root)"""
+﻿"""Forensic AI web API (FastAPI).  Run:  py -m uvicorn server.main:app --port 8000   (from the project root)"""
 import asyncio
 import collections
 import json
@@ -161,3 +161,7 @@ async def stream(request: Request):
 app.mount("/samples", StaticFiles(directory=SAMPLES_DIR), name="samples")
 if os.path.isdir(WEB_DIR):
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+else:
+    @app.get("/")
+    def root():
+        return {"service": "Forensic AI API", "status": "ok", "health": "/api/health", "docs": "/docs"}
