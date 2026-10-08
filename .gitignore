@@ -7,3 +7,4 @@ tests/shots/
 .pytest_cache/
 node_modules/
 .vercel/
+local_env.bat

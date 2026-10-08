@@ -475,6 +475,34 @@ const live = {
 $("#liveBtn").addEventListener("click", () => (live.on ? live.stop() : live.start()));
 addEventListener("pagehide", () => { if (live.on) live.stop(); });
 
+/* Server-Sent-Events client built on fetch(): unlike EventSource it can send custom headers (needed for ngrok's free plan)
+   and reconnects by itself. */
+function openStream(url, { onOpen, onEvent, onError }) {
+  let stop = false, ctrl = null;
+  (async function loop() {
+    while (!stop) {
+      try {
+        ctrl = new AbortController();
+        const r = await fetch(url, { headers: { Accept: "text/event-stream" }, signal: ctrl.signal, cache: "no-store" });
+        if (!r.ok || !r.body) throw new Error("HTTP " + r.status);
+        onOpen();
+        const reader = r.body.getReader(), dec = new TextDecoder(); let buf = "";
+        for (;;) {
+          const { value, done } = await reader.read(); if (done) break;
+          buf += dec.decode(value, { stream: true }); let i;
+          while ((i = buf.indexOf("\n\n")) >= 0) {
+            const chunk = buf.slice(0, i); buf = buf.slice(i + 2);
+            const line = chunk.split("\n").find((l) => l.startsWith("data:"));
+            if (line) { try { onEvent(JSON.parse(line.slice(5))); } catch {} }
+          }
+        }
+      } catch (e) { if (stop) return; }
+      if (stop) return; onError(); await new Promise((res) => setTimeout(res, 2500));
+    }
+  })();
+  return { close() { stop = true; try { ctrl.abort(); } catch {} } };
+}
+
 /* ============================================================ 8. dashboard (realtime) */
 const dash = {
   rows: [], seen: new Set(), events: 0, mode: "none", sse: null, sb: null, refreshT: null, stats: null,
@@ -514,10 +542,12 @@ const dash = {
   },
   startSSE() {
     if (this.sse) this.sse.close();
-    this.sse = new EventSource(API("/api/stream")); this.mode = "sse"; this.setConn("", "connecting…");
-    this.sse.onopen = () => this.setConn("ok", "LIVE · server stream (SSE)");
-    this.sse.onmessage = (e) => { try { const ev = JSON.parse(e.data); if (ev.type === "analysis") this.onRecord(ev.record); } catch {} };
-    this.sse.onerror = () => this.setConn("bad", "reconnecting…");
+    this.mode = "sse"; this.setConn("", "connecting…");
+    this.sse = openStream(API("/api/stream"), {
+      onOpen: () => this.setConn("ok", "LIVE · server stream (SSE)"),
+      onEvent: (ev) => { if (ev.type === "analysis") this.onRecord(ev.record); },
+      onError: () => this.setConn("bad", "reconnecting…"),
+    });
   },
   async startSupabase() {
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
